@@ -6,7 +6,6 @@ including the official validate_blueprint.py in instantiated mode.
 
 from __future__ import annotations
 
-import json
 import shutil
 import subprocess
 import sys
