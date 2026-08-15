@@ -101,6 +101,14 @@ constraints:
   compatibility: { backward_compatible: true }
 ```
 
+A **Task Contract is a narrowing scope projection**: it may restrict paths,
+actions, and constraints, but it may **never override** accepted architecture,
+public interface schemas, or red lines. The authority cascade is:
+
+1. security/safety/legal → 2. accepted architecture and contracts → 3. approved
+Task Contract (narrowing only) → 4. ADRs → 5. test assertions → 6. local style
+→ `Unknown` fail closed.
+
 ## Layer 4 — Verification & Evidence (validation classes)
 
 Classify every test by what it *proves*, and give the machine command:

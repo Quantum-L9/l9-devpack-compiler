@@ -1,0 +1,131 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "program-execution-blueprint.workstreams.v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "schema_version",
+    "workstreams"
+  ],
+  "properties": {
+    "schema": {
+      "const": "program-execution-blueprint.workstreams.v2"
+    },
+    "schema_version": {
+      "const": "2.0.0"
+    },
+    "workstreams": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "objective",
+          "owner",
+          "target_ids",
+          "scope",
+          "inputs",
+          "outputs",
+          "entry_gate_ids",
+          "exit_gate_ids",
+          "rollback_boundary",
+          "definition_status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^WS-[0-9]{2,}$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "objective": {
+            "type": "string",
+            "minLength": 1
+          },
+          "owner": {
+            "type": "string",
+            "minLength": 1
+          },
+          "target_ids": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "scope": {
+            "type": "object",
+            "required": [
+              "include",
+              "exclude"
+            ],
+            "properties": {
+              "include": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "exclude": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "additionalProperties": false
+          },
+          "inputs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "outputs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "entry_gate_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "exit_gate_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "rollback_boundary": {
+            "type": "string",
+            "minLength": 1
+          },
+          "definition_status": {
+            "enum": [
+              "draft",
+              "active",
+              "superseded",
+              "retired"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

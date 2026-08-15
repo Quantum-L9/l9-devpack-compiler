@@ -1,0 +1,8 @@
+domains:
+  demo:
+    paths: [ src/ ]
+    purpose: demo
+    owner: platform-team
+    public_surface: false
+    depends_on: []
+    invariants: [ "no runtime state emitted by the compiler" ]

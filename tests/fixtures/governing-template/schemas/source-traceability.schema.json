@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "program-execution-blueprint.source-traceability.v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "schema_version",
+    "authority_classes",
+    "sources"
+  ],
+  "properties": {
+    "schema": {
+      "const": "program-execution-blueprint.source-traceability.v2"
+    },
+    "schema_version": {
+      "const": "2.0.0"
+    },
+    "authority_classes": {},
+    "sources": {}
+  }
+}

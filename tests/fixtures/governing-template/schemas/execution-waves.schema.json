@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "program-execution-blueprint.execution-waves.v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "schema_version",
+    "promotion_rule",
+    "waves"
+  ],
+  "properties": {
+    "schema": {
+      "const": "program-execution-blueprint.execution-waves.v2"
+    },
+    "schema_version": {
+      "const": "2.0.0"
+    },
+    "promotion_rule": {},
+    "waves": {}
+  }
+}

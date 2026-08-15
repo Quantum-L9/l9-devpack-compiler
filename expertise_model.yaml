@@ -7,14 +7,14 @@
 # owner: igor_beylin
 # status: active
 # version: 1.0.0
-# updated: 2026-07-15
+# updated: 2026-08-15
 # Purpose: Compressed judgment extracted from the Developer Pack Kernel (DPK-1.0),
 # filtered through the L9 Compounding Leverage and Minimize-Friction kernels.
 # Consumed by scripts/validate_exemplary_skill.py.
 
 expertise_model:
   experts:
-    - platform-architect (repo -> six-layer machine control plane, boundaries, interfaces)
+    - platform-architect (repo -> six-layer machine envelope, boundaries, interfaces)
     - reliability-engineer (alert<->runbook 1:1, machine rollback target, SLOs)
     - ai-systems-engineer (model/prompt registries, eval suites for non-deterministic features)
     - security-engineer (scoped credentials, prohibited-in-logs, least-privilege access paths)
@@ -22,48 +22,48 @@ expertise_model:
 
   doctrine:
     - Emit a machine-parseable envelope beside human docs; the repo becomes agent-operable, not passive text.
+    - DPK is a compiler and design-time authority: it never owns runtime task state, gate evaluation, attempts, approvals, leases, or receipts (the Program Execution Controller owns runtime).
     - Every structural claim carries a verification block (last_verified + commit + environment + confidence) or is labeled Unknown.
-    - Every code mutation is preceded by a Task Contract bounding scope (allowed/prohibited) and constraints.
+    - Every code mutation is preceded by a Task Contract bounding scope (allowed/prohibited) and constraints; a Task Contract is a narrowing projection and may never override accepted architecture or public contracts.
     - Every production alert maps 1:1 to a repo runbook that resolves; a broken link zeroes the gate.
-    - Non-deterministic AI features require a dedicated evaluation suite; absence zeroes the gate.
-    - A machine-executable rollback target must exist and be dry-runnable; absence zeroes the gate.
-    - Disclose inherited debt in a signed ledger with remediation targets; never treat it as greenfield.
-    - The execution package supplies infrastructure decisions so the agent never invents access, creds, or contracts.
-    - Split mutation across isolated personas; no agent validates its own work.
-    - Prefer the smallest correct change that preserves invariants, compatibility, security, operability, performance.
+    - Non-deterministic AI features require a dedicated evaluation suite; a machine-executable rollback target must be declared — absence zeroes the gate (declaration is structural; dry-run success is separate, independent evidence).
+    - Authority-affecting defaults require explicit governing provenance (policy source identity in machine output); without provenance the fact fails closed.
+    - Disclose inherited debt in a signed ledger with remediation targets; the execution package supplies infrastructure decisions so the agent never invents access, creds, or contracts.
+    - Split mutation across isolated personas (no agent validates its own work) and prefer the smallest correct change that preserves invariants, compatibility, security, operability, performance.
+    - Structural validation never claims executed runtime proof (tests run, dry-runs, gate results); that evidence belongs to the runtime authority.
 
   invariants:
-    - manifest declares ownership.operational_owner (production ops owner) else score == 0
-    - a machine-executable rollback target exists else score == 0
+    - manifest declares ownership.operational_owner (production ops owner) or a provenanced policy default, else score == 0
+    - a machine-executable rollback target is declared, else score == 0
     - every non-deterministic AI feature has an eval suite else score == 0
     - every alert.runbook path resolves to a real file else score == 0
     - repository-map paths align with real code imports
     - execution package contains all seven components before work begins
     - prohibited fields never appear in logs (raw_prompt, access_token, customer_email)
     - credentials are scoped and referenced by name, never embedded
-    - tests are never weakened or deleted to pass a gate
+    - tests are never weakened or deleted to pass a gate, and structural validation never claims executed runtime proof
     - unverifiable facts are labeled Unknown, never fabricated
 
   authority_hierarchy:
-    - security_safety_legal > explicit_task_contract
-    - explicit_task_contract > architecture_invariants
-    - architecture_invariants > public_interface_schemas
-    - public_interface_schemas > adrs > test_assertions > local_style
+    - security_safety_legal > accepted_architecture_and_contracts
+    - accepted_architecture_and_contracts > approved_task_contract (narrowing only)
+    - approved_task_contract > adrs
+    - adrs > test_assertions > local_style
     - unknown > fabrication (fail closed; stop and report)
 
   activation_signals:
     - user asks to produce/build/compile a developer pack, DPK, or agent handoff pack for a repo
     - user wants a repo made agent-operable, handoff-ready, or self-documenting
-    - user references DPK-1.0, the six-layer control plane, .ai/manifest, or AGENTS.md
+    - user references DPK-1.0, the six-layer machine envelope, .ai/manifest, or AGENTS.md
     - user needs an execution package (repo/env/creds/contracts/queue/validation/stop) for an agent
-    - user asks to score or audit a repo's handoff readiness against the quality gate
+    - user asks to score/audit a repo's handoff readiness or emit a Program Execution Blueprint v2 projection
 
   reject_signals:
     - request is a normal feature/code change (route through a Task Contract, not pack compilation)
     - no repository or source is available to analyze (nothing to compile)
     - user wants human prose docs only, not a machine envelope
     - compiling would require fabricating owners/contracts/credentials that cannot be labeled Unknown
-    - request is to bypass a red-line (ship without rollback, eval suite, or ops owner)
+    - request to bypass a red-line or to have DPK own runtime execution state, gate results, or receipts (runtime belongs to the Program Execution Controller)
 
   adapters:
     - "non-AI service (no models/prompts) -> skip the AI registries and the eval red-line; keep the other five layers and red-lines."
@@ -71,15 +71,15 @@ expertise_model:
     - "greenfield/near-empty repo -> emit a skeleton pack with Unknown-labeled verification blocks; never fabricate commits, dashboards, or owners."
 
   failure_modes:
-    - "hallucinated-contract: inventing an interface/owner -> require source evidence or label Unknown; validate_devpack flags absence."
+    - "hallucinated-contract / infra-invention: inventing an interface, owner, env, or credential -> require source evidence or label Unknown; the execution package supplies decisions; stop when a component is Unknown."
     - "broken-runbook-link: alert points to a missing file -> red-line, score 0; validate_devpack resolves every alert.runbook."
-    - "missing-rollback: no machine rollback target -> red-line, score 0."
-    - "eval-gap: a non-deterministic AI feature ships without an eval suite -> red-line, score 0."
-    - "infra-invention: agent guesses env/creds/contracts -> the execution package supplies them; stop when a component is Unknown."
+    - "missing-rollback / eval-gap: no machine rollback target declared or a non-deterministic AI feature without an eval suite -> red-line, score 0."
+    - "authority-widening: a Task Contract tries to override accepted architecture or public schemas -> reject; Task Contracts may narrow only."
+    - "runtime-ownership-drift: DPK output starts owning task state, gates, or receipts -> reject; runtime belongs to the Program Execution Controller."
 
   leverage_points:
     - Machine envelope (.ai/*): every future agent run starts from verified truth, not tribal knowledge.
     - Execution package: removes infrastructure-decision invention across every future task on the repo.
-    - Deterministic validate_devpack.py: turns the quality gate + red-lines into a check, not prose.
+    - Deterministic validate_devpack.py + Program Execution v2 projection: quality gate, red-lines, and lossless design-time authority (provenance edges, scoped Unknowns, canonical authorization ceilings) as checks, not prose.
     - Copy-ready per-layer templates: accelerate packing any repo with complete, non-stub artifacts.
     - Verification blocks + signed debt ledger: compound trust and safety across successive handoffs.

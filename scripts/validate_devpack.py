@@ -12,10 +12,26 @@ Red lines (any one -> score 0, verdict blocked):
   3. a non-deterministic AI feature with no evaluation suite
   4. an alert whose runbook link does not resolve to a real file
 
-Degrades gracefully: uses PyYAML when available, else a conservative text scan
-for the specific red-line signals so the checks still run.
+Provenance law (DEC-003): an authority-affecting default (operational_owner,
+library rollback) may be derived ONLY from an explicit governing policy with
+recorded provenance. The validator loads `.ai/policy.yaml` ->
+`policy_derived_defaults`, applies an entry only when its `source_id` is a real
+governing identity, and records the derivation in the machine report under
+`policy_provenance`. Without a provenanced policy entry the red line fails.
+The operator may also supply provenance on the command line (--owner +
+--owner-source), which is explicit and recorded the same way. There is no
+undocumented fallback: a missing fact stays a red-line failure.
 
-Exit codes: 0 operable/conditional, 1 blocked (red-line or score < 80), 2 error.
+Evidence scope (DEC-004): this validator reports STRUCTURAL COMPILE-READINESS
+only. Artifact presence is never represented as executed proof: the report
+declares `evidence_scope: structural_compile_readiness`, per-category
+`category_evidence` entries state their presence-based evidence level, and
+`executed_proof` (tests, rollback dry-run, evals, architecture-alignment
+verification) is always false here — runtime proof requires independent
+execution by another authority (e.g., the Program Execution Controller).
+
+Exit codes: 0 compile_ready/compile_ready_conditional, 1 blocked (red-line or
+score < 80), 2 error.
 """
 
 from __future__ import annotations
@@ -43,9 +59,10 @@ WEIGHTS = {
 # operable — the decision is simply undocumented.
 _PLACEHOLDERS = {"", "unknown", "tbd", "todo", "none", "n/a", "na", "?", "fixme"}
 
-# When no ops owner is specified, default to the org owner rather than failing.
-# Autofix is ON by default; pass --strict to restore fail-closed behavior.
-DEFAULT_OPS_OWNER = "quantum-ai"
+# Canonical policy artifact declaring policy-derived defaults. Each entry must
+# carry governing provenance (source_id is a real identity) or it is ignored
+# fail-closed and the fact remains a red-line failure.
+POLICY_FILE = ".ai/policy.yaml"
 
 
 def _is_real(value: Any) -> bool:
@@ -179,12 +196,77 @@ def _is_library(manifest: Any, manifest_text: str) -> bool:
     return bool(re.search(r"type:\s*(library|sdk|package)\b", manifest_text))
 
 
+def _policy_defaults(root: Path) -> dict[str, dict[str, Any]]:
+    """Load `.ai/policy.yaml` -> policy_derived_defaults (empty when absent)."""
+    data = _load_yaml(root / POLICY_FILE)
+    if not isinstance(data, dict):
+        return {}
+    defaults = data.get("policy_derived_defaults")
+    if not isinstance(defaults, dict):
+        return {}
+    return {k: v for k, v in defaults.items() if isinstance(v, dict)}
+
+
+def _provenanced_entry(
+    entry: dict[str, Any], fact: str, provenance: list[dict[str, Any]]
+) -> tuple[str | None, dict[str, str] | None]:
+    """Return (value, governing_source) for a policy entry that carries real
+    provenance; otherwise record the rejection and return (None, None)."""
+    value = entry.get("value")
+    source_id = entry.get("source_id")
+    if not _is_real(value) or not _is_real(source_id):
+        provenance.append(
+            {
+                "fact": fact,
+                "status": "rejected_missing_provenance",
+                "reason": "policy entry lacks a real value or governing source_id",
+            }
+        )
+        return None, None
+    revision = entry.get("source_revision")
+    governing = {
+        "id": str(source_id).strip(),
+        "revision": str(revision).strip() if _is_real(revision) else None,
+    }
+    provenance.append(
+        {
+            "fact": fact,
+            "status": "derived_from_policy",
+            "derived_value": str(value).strip(),
+            "governing_source": governing,
+        }
+    )
+    return str(value).strip(), governing
+
+
+def _cli_provenance(
+    value: str, source: str, fact: str, provenance: list[dict[str, Any]]
+) -> str:
+    """Record an operator-supplied (command-line) default with provenance."""
+    source_id, _, revision = source.partition("@")
+    provenance.append(
+        {
+            "fact": fact,
+            "status": "derived_from_operator_supply",
+            "derived_value": value,
+            "governing_source": {
+                "id": source_id,
+                "revision": revision or None,
+            },
+        }
+    )
+    return value
+
+
 def evaluate(
-    root: Path, autofix: bool = True, default_owner: str = DEFAULT_OPS_OWNER
+    root: Path,
+    *,
+    owner_default: str | None = None,
+    owner_source: str | None = None,
 ) -> dict[str, Any]:
     manifest = _load_yaml(root / ".ai" / "manifest.yaml")
     manifest_text = _text(root / ".ai" / "manifest.yaml")
-    autofixes: list[str] = []
+    provenance: list[dict[str, Any]] = []
 
     # --- Red lines ---
     ops_owner = False
@@ -194,18 +276,37 @@ def evaluate(
     elif manifest_text:
         m = re.search(r"operational_owner:\s*(.+)", manifest_text)
         ops_owner = bool(m and _is_real(m.group(1).split("#", 1)[0]))
-    # Autofix: an unspecified ops owner defaults to the org owner (Quantum AI),
-    # not a failure. This is a declared default ownership policy, not a fabrication.
-    if not ops_owner and autofix:
-        ops_owner = True
-        autofixes.append(f"ops_owner defaulted to '{default_owner}'")
+
+    # Missing owner: derive only from explicit provenanced policy, or from an
+    # operator-supplied default that names its governing source. No other
+    # fallback exists — the fact otherwise stays a red-line failure.
+    if not ops_owner:
+        policy_entry = _policy_defaults(root).get("operational_owner")
+        if isinstance(policy_entry, dict):
+            value, _gov = _provenanced_entry(policy_entry, "operational_owner", provenance)
+            if value is not None:
+                ops_owner = True
+        elif owner_default is not None and owner_source is not None and _is_real(owner_source):
+            _cli_provenance(owner_default, owner_source, "operational_owner", provenance)
+            ops_owner = True
+        elif owner_default is not None and (owner_source is None or not _is_real(owner_source)):
+            provenance.append(
+                {
+                    "fact": "operational_owner",
+                    "status": "rejected_missing_provenance",
+                    "reason": "--owner supplied without a real --owner-source",
+                }
+            )
 
     rollback = _rollback_present(root, manifest)
-    # Autofix (library/SDK only): rollback defaults to the version pin/yank target
-    # (npm dist-tag + deprecate), which IS the rollback mechanism for a package.
-    if not rollback and autofix and _is_library(manifest, manifest_text):
-        rollback = True
-        autofixes.append("rollback defaulted to library version-pin/yank (SDK adapter)")
+    if not rollback and _is_library(manifest, manifest_text):
+        # Library/SDK rollback may default to the version pin/yank target only
+        # from an explicit provenanced policy entry.
+        policy_entry = _policy_defaults(root).get("library_rollback")
+        if isinstance(policy_entry, dict):
+            value, _gov = _provenanced_entry(policy_entry, "library_rollback", provenance)
+            if value is not None:
+                rollback = True
 
     ai = _has_ai_features(root, manifest)
     eval_ok = (not ai) or _eval_suite_resolves(root)
@@ -227,46 +328,173 @@ def evaluate(
     red_line_tripped = any(v == "fail" for v in red_lines.values())
 
     # --- Category scores (static presence/structure) ---
-    cats: dict[str, int] = {}
-    cats["repository_clarity"] = (
-        WEIGHTS["repository_clarity"] if _has_verification_block(root) else 0
-    )
-    cats["architecture_mapping"] = (
-        WEIGHTS["architecture_mapping"] if (root / ".ai" / "repository-map.yaml").exists() else 0
-    )
-    cats["local_reproducibility"] = (
-        WEIGHTS["local_reproducibility"]
-        if _first_existing(root, "scripts/bootstrap", "scripts/bootstrap.sh", "Makefile")
-        else 0
-    )
+    # Each signal is presence evidence only; nothing here is executed proof.
+    sig_verification = _has_verification_block(root)
+    sig_repo_map = (root / ".ai" / "repository-map.yaml").exists()
+    sig_bootstrap = _first_existing(
+        root, "scripts/bootstrap", "scripts/bootstrap.sh", "Makefile"
+    ) is not None
     tests_present = (root / "tests").is_dir() or (root / "test").is_dir()
+    sig_constraints = (root / ".ai" / "constraints.yaml").exists()
+    sig_alerts = bool(alerts) and runbook_links_ok
+    sig_debt = _debt_ledger_present(root)
+
+    cats: dict[str, int] = {}
+    cats["repository_clarity"] = WEIGHTS["repository_clarity"] if sig_verification else 0
+    cats["architecture_mapping"] = WEIGHTS["architecture_mapping"] if sig_repo_map else 0
+    cats["local_reproducibility"] = WEIGHTS["local_reproducibility"] if sig_bootstrap else 0
     cats["test_eval_coverage"] = (
         WEIGHTS["test_eval_coverage"] if tests_present and eval_ok else (7 if tests_present else 0)
     )
-    cats["security_boundaries"] = (
-        WEIGHTS["security_boundaries"] if (root / ".ai" / "constraints.yaml").exists() else 0
-    )
-    cats["observability_integrity"] = (
-        WEIGHTS["observability_integrity"] if alerts and runbook_links_ok else 0
-    )
+    cats["security_boundaries"] = WEIGHTS["security_boundaries"] if sig_constraints else 0
+    cats["observability_integrity"] = WEIGHTS["observability_integrity"] if sig_alerts else 0
     cats["deployment_rollback"] = WEIGHTS["deployment_rollback"] if rollback else 0
-    cats["transition_clarity"] = WEIGHTS["transition_clarity"] if _debt_ledger_present(root) else 0
+    cats["transition_clarity"] = WEIGHTS["transition_clarity"] if sig_debt else 0
+
+    # Every readiness result declares the evidence level behind it. Claims are
+    # presence statements only; no executed proof is attributed to a category.
+    category_evidence: dict[str, dict[str, Any]] = {
+        "repository_clarity": {
+            "score": cats["repository_clarity"],
+            "weight": WEIGHTS["repository_clarity"],
+            "evidence_level": "structural_presence",
+            "claim": (
+                "verification tokens present in structural docs (presence only; "
+                "claims not independently re-verified)"
+                if sig_verification
+                else "no verification block found"
+            ),
+            "proved_claims": [],
+        },
+        "architecture_mapping": {
+            "score": cats["architecture_mapping"],
+            "weight": WEIGHTS["architecture_mapping"],
+            "evidence_level": "structural_presence",
+            "claim": (
+                "repository-map file present; import-alignment verification is "
+                "not performed by this validator"
+                if sig_repo_map
+                else "repository-map file missing"
+            ),
+            "proved_claims": [],
+        },
+        "local_reproducibility": {
+            "score": cats["local_reproducibility"],
+            "weight": WEIGHTS["local_reproducibility"],
+            "evidence_level": "structural_presence",
+            "claim": (
+                "bootstrap entrypoint present; setup not executed here"
+                if sig_bootstrap
+                else "no bootstrap entrypoint found"
+            ),
+            "proved_claims": [],
+        },
+        "test_eval_coverage": {
+            "score": cats["test_eval_coverage"],
+            "weight": WEIGHTS["test_eval_coverage"],
+            "evidence_level": "structural_presence",
+            "claim": (
+                "test directory present; no test execution is claimed by this "
+                "validator"
+                if tests_present
+                else "no test directory found"
+            ),
+            "proved_claims": [],
+        },
+        "security_boundaries": {
+            "score": cats["security_boundaries"],
+            "weight": WEIGHTS["security_boundaries"],
+            "evidence_level": "structural_presence",
+            "claim": (
+                "constraints file present; credential/authorization checks not "
+                "executed here"
+                if sig_constraints
+                else "constraints file missing"
+            ),
+            "proved_claims": [],
+        },
+        "observability_integrity": {
+            "score": cats["observability_integrity"],
+            "weight": WEIGHTS["observability_integrity"],
+            "evidence_level": "structural_presence",
+            "claim": (
+                "alert entries present and runbook links resolve statically"
+                if sig_alerts
+                else "no statically-resolving alert->runbook set found"
+            ),
+            "proved_claims": [],
+        },
+        "deployment_rollback": {
+            "score": cats["deployment_rollback"],
+            "weight": WEIGHTS["deployment_rollback"],
+            "evidence_level": "structural_presence",
+            "claim": (
+                "rollback target declared; dry-run execution is NOT claimed"
+                if rollback
+                else "no declared rollback target"
+            ),
+            "proved_claims": [],
+        },
+        "transition_clarity": {
+            "score": cats["transition_clarity"],
+            "weight": WEIGHTS["transition_clarity"],
+            "evidence_level": "structural_presence",
+            "claim": (
+                "debt ledger present; remediation targets not verified here"
+                if sig_debt
+                else "no debt ledger found"
+            ),
+            "proved_claims": [],
+        },
+    }
+
+    red_line_evidence: dict[str, dict[str, Any]] = {
+        "ops_owner": {
+            "status": red_lines["ops_owner"],
+            "evidence_level": "structural_declaration",
+            "executed": False,
+            "claim": "ownership.operational_owner declared (or provenanced default derived)",
+        },
+        "rollback": {
+            "status": red_lines["rollback"],
+            "evidence_level": "structural_declaration",
+            "executed": False,
+            "claim": "machine-executable rollback target declared; dry-run NOT executed",
+        },
+        "eval_suite": {
+            "status": red_lines["eval_suite"],
+            "evidence_level": "structural_declaration",
+            "executed": False,
+            "claim": "eval_suite/eval_baseline reference resolves; eval NOT executed",
+        },
+        "runbook_links": {
+            "status": red_lines["runbook_links"],
+            "evidence_level": "structural_declaration",
+            "executed": False,
+            "claim": "alert runbook links statically resolve to real files",
+        },
+    }
 
     raw_score = sum(cats.values())
     score = 0 if red_line_tripped else raw_score
     if red_line_tripped or score < 80:
         band = "blocked"
     elif score >= 90:
-        band = "operable"
+        band = "compile_ready"
     else:
-        band = "conditional"
+        band = "compile_ready_conditional"
 
     remediation: list[str] = []
     if not ops_owner:
-        remediation.append("add ownership.operational_owner to .ai/manifest.yaml (red line)")
+        remediation.append(
+            "add ownership.operational_owner to .ai/manifest.yaml or derive it from a "
+            "provenanced .ai/policy.yaml default (red line)"
+        )
     if not rollback:
-        remediation.append("declare a machine-executable rollback target (red line)")
-    remediation.extend(f"autofixed: {fix}" for fix in autofixes)
+        remediation.append(
+            "declare a machine-executable rollback target or derive a library rollback "
+            "from a provenanced .ai/policy.yaml default (red line)"
+        )
     if not eval_ok:
         remediation.append("add an eval suite for the non-deterministic AI feature (red line)")
     if broken_runbooks:
@@ -277,16 +505,31 @@ def evaluate(
 
     return {
         "root": str(root),
+        "evidence_scope": "structural_compile_readiness",
         "ai_service": ai,
         "red_lines": red_lines,
+        "red_line_evidence": red_line_evidence,
         "red_line_tripped": red_line_tripped,
         "categories": cats,
+        "category_evidence": category_evidence,
+        "executed_proof": {
+            "tests_executed": False,
+            "rollback_dry_run_executed": False,
+            "eval_executed": False,
+            "architecture_alignment_verified": False,
+            "note": (
+                "structural validation never executes tests, rollback dry-runs, "
+                "evals, or alignment checks; runtime proof requires independent "
+                "execution by another authority (e.g., the Program Execution "
+                "Controller)"
+            ),
+        },
         "score": score,
         "raw_score": raw_score,
         "band": band,
         "alerts_found": len(alerts),
         "broken_runbooks": broken_runbooks,
-        "autofixes": autofixes,
+        "policy_provenance": provenance,
         "remediation": remediation,
     }
 
@@ -298,26 +541,39 @@ def main() -> int:
     parser.add_argument(
         "--strict",
         action="store_true",
-        help="Disable autofix: an unspecified ops owner / rollback fails the red line.",
+        help=(
+            "Deprecated: fail-closed is now the only mode. Accepted for "
+            "compatibility with DPK-1.0 callers."
+        ),
     )
     parser.add_argument(
         "--owner",
-        default=DEFAULT_OPS_OWNER,
-        help=f"Default ops owner used by autofix (default: {DEFAULT_OPS_OWNER}).",
+        default=None,
+        help=(
+            "Operator-supplied ops-owner default. Requires --owner-source "
+            "<id>[@revision]; without it the default is rejected (fail closed)."
+        ),
+    )
+    parser.add_argument(
+        "--owner-source",
+        default=None,
+        help="Governing source identity for --owner, e.g. org-policy@2026-07.",
     )
     args = parser.parse_args()
     root = Path(args.repo)
     if not root.exists() or not root.is_dir():
         print(f"FAIL: not a directory: {root}", file=sys.stderr)
         return 2
-    report = evaluate(root, autofix=not args.strict, default_owner=args.owner)
+    report = evaluate(root, owner_default=args.owner, owner_source=args.owner_source)
     if args.json:
         print(json.dumps(report, indent=2))
     else:
         print(f"score={report['score']} band={report['band']} red_lines={report['red_lines']}")
         for item in report["remediation"]:
             print(f"  - {item}")
-    return 0 if report["band"] in ("operable", "conditional") else 1
+        for item in report["policy_provenance"]:
+            print(f"  [provenance] {item['fact']}: {item['status']}")
+    return 0 if report["band"] in ("compile_ready", "compile_ready_conditional") else 1
 
 
 if __name__ == "__main__":

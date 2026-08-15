@@ -1,0 +1,50 @@
+schema_version: "1.0"
+execution_package:
+  repository_access:
+    id: demo-service
+    url: https://github.com/example/demo-service.git
+    default_branch: main
+    working_branch: pe/demo-phase
+    checkout: worktree
+    allowed_paths: [ src/, tests/ ]
+    prohibited_paths: [ src/generated/ ]
+  environment_access:
+    runtime: python@3.12
+    bootstrap: scripts/bootstrap.sh
+    services: []
+    compose: Unknown
+    network_policy: offline
+  scoped_credentials: []
+  authoritative_contracts:
+    manifest: .ai/manifest.yaml
+    repository_map: .ai/repository-map.yaml
+    constraints: .ai/constraints.yaml
+    task_contract: null
+    interface_schemas: []
+    adrs: []
+  work_queue:
+    - phase: 1-foundation
+      entry_criteria:
+        - "no prior phase pending"
+      exit_criteria:
+        - "bootstrap script is present and parseable"
+      validation:
+        - "python3 -m unittest discover -s tests -p 'test_*.py'"
+    - phase: 2-hardening
+      entry_criteria:
+        - "phase 1-foundation exit criteria met"
+      exit_criteria:
+        - "constraints file is present and non-empty"
+      validation:
+        - "python3 -m unittest discover -s tests -p 'test_*.py'"
+  validation_commands:
+    lint: "python3 -m py_compile scripts/*.py"
+    unit: "python3 -m unittest discover -s tests -p 'test_*.py'"
+    contract: Unknown
+    integration: Unknown
+    evaluate: "n/a for non-AI"
+    perf: Unknown
+    resilience: Unknown
+  stop_conditions:
+    - any red-line unsatisfiable
+    - a required execution-package component is Unknown and needed to proceed

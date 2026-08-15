@@ -1,0 +1,60 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "schema_version",
+    "blueprint_contract",
+    "required_sources",
+    "canonical_owners",
+    "controller_import"
+  ],
+  "properties": {
+    "schema": {
+      "const": "program-execution-blueprint.index.v2"
+    },
+    "schema_version": {
+      "const": "2.0.0"
+    },
+    "blueprint_contract": {
+      "const": "program-execution-blueprint.v2"
+    },
+    "required_sources": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "canonical_owners": {
+      "type": "object",
+      "minProperties": 1
+    },
+    "controller_import": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "immutable",
+        "digest_algorithm",
+        "unknown_contract",
+        "source_change"
+      ],
+      "properties": {
+        "immutable": {
+          "const": true
+        },
+        "digest_algorithm": {
+          "const": "sha256"
+        },
+        "unknown_contract": {
+          "const": "reject"
+        },
+        "source_change": {
+          "const": "mark_runtime_stale"
+        }
+      }
+    }
+  }
+}

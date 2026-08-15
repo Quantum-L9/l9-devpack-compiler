@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "task-card.schema.json",
+  "title": "Program Task Card",
+  "type": "object",
+  "required": [
+    "id",
+    "title",
+    "workstream",
+    "wave",
+    "target",
+    "objective",
+    "depends_on",
+    "outputs",
+    "acceptance",
+    "validation",
+    "rollback",
+    "authorization",
+    "status"
+  ]
+}
