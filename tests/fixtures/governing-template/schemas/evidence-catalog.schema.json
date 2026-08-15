@@ -1,0 +1,139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "program-execution-blueprint.evidence-catalog.v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "schema_version",
+    "evidence"
+  ],
+  "properties": {
+    "schema": {
+      "const": "program-execution-blueprint.evidence-catalog.v2"
+    },
+    "schema_version": {
+      "const": "2.0.0"
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "type",
+          "source",
+          "revision",
+          "digest",
+          "method",
+          "environment",
+          "producer",
+          "produced_at",
+          "expires_at",
+          "result",
+          "status",
+          "supports",
+          "contradicts",
+          "notes"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^EVID-[0-9]{3,}$"
+          },
+          "type": {
+            "enum": [
+              "source_snapshot",
+              "command_output",
+              "test_result",
+              "inspection",
+              "approval",
+              "decision",
+              "migration_result",
+              "monitoring_observation",
+              "recovery_artifact",
+              "other"
+            ]
+          },
+          "source": {
+            "type": "string",
+            "minLength": 1
+          },
+          "revision": {
+            "type": "string",
+            "minLength": 1
+          },
+          "digest": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "method": {
+            "type": "string",
+            "minLength": 1
+          },
+          "environment": {
+            "type": "string",
+            "minLength": 1
+          },
+          "producer": {
+            "type": "string",
+            "minLength": 1
+          },
+          "produced_at": {
+            "type": "string",
+            "minLength": 1
+          },
+          "expires_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "result": {
+            "enum": [
+              "PASS",
+              "FAIL",
+              "BLOCKED",
+              "UNKNOWN",
+              "NOT_APPLICABLE_WITH_REASON",
+              "INFORMATIONAL"
+            ]
+          },
+          "status": {
+            "enum": [
+              "available",
+              "planned",
+              "invalidated",
+              "expired",
+              "UNKNOWN"
+            ]
+          },
+          "supports": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "contradicts": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

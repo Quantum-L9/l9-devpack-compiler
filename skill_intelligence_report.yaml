@@ -7,7 +7,7 @@
 # owner: igor_beylin
 # status: active
 # version: 1.0.0
-# updated: 2026-07-15
+# updated: 2026-08-15
 # Purpose: Exemplary-tier intelligence report for l9-devpack-compiler. Validated by
 # scripts/validate_exemplary_skill.py (all exemplary gates must be pass).
 
@@ -16,9 +16,9 @@ skill_intelligence_report:
     strong_signals:
       - produce/build/compile a developer pack or DPK for a repo
       - make a repo agent-operable / handoff-ready / self-documenting
-      - references DPK-1.0, six-layer control plane, .ai/manifest, AGENTS.md
+      - references DPK-1.0, six-layer machine envelope, .ai/manifest, AGENTS.md
       - needs an execution package (repo/env/creds/contracts/queue/validation/stop)
-      - score/audit a repo's handoff readiness against the quality gate
+      - score/audit a repo's handoff readiness or emit a Program Execution Blueprint v2 projection
     weak_signals:
       - a repo is mentioned but no handoff/pack/operability intent is stated
       - user asks a general "how do I document a repo" question
@@ -27,7 +27,7 @@ skill_intelligence_report:
       - no repository/source available to analyze
       - human prose docs only, not a machine envelope
       - would require fabricating owners/contracts/credentials un-labelable as Unknown
-      - request to bypass a red-line (no rollback / no eval / no ops owner)
+      - request to bypass a red-line or to have DPK own runtime execution state/gates/receipts (runtime belongs to the Program Execution Controller)
     false_positive_risks:
       - triggering on any repo mention without handoff/operability intent
       - emitting layers with invented (non-evidenced) contracts or owners
@@ -37,16 +37,15 @@ skill_intelligence_report:
   authority_model:
     order:
       - security_safety_legal
-      - explicit_task_contract
-      - architecture_invariants
-      - public_interface_schemas
+      - accepted_architecture_and_contracts
+      - approved_task_contract_narrowing
       - adrs
       - test_assertions
       - local_style
       - unknown_fail_closed
     conflict_rules:
       - a red-line override beats every score contribution (any tripped -> score 0)
-      - explicit Task Contract beats architecture invariants beats public schemas
+      - accepted architecture and public contracts beat an approved Task Contract, which may narrow but never widen upstream authority
       - unknown beats fabrication: label and stop rather than invent infrastructure
 
   expert_heuristics:
@@ -61,10 +60,10 @@ skill_intelligence_report:
       action: require a 1:1 alert.runbook link that resolves to a real file; broken -> red-line, score 0
     - condition: a code change is requested
       judgment: unbounded scope drifts and breaks invariants
-      action: require a Task Contract (allowed/prohibited paths + constraints) before any mutation
+      action: require a Task Contract (allowed/prohibited paths + constraints) before any mutation; a Task Contract is a narrowing projection that never overrides accepted architecture or public contracts
     - condition: rollback is unspecified
       judgment: a repo you cannot revert is unsafe to hand off
-      action: require a machine-executable, dry-runnable rollback target; absent -> red-line, score 0
+      action: require a machine-executable rollback target to be declared; absent -> red-line, score 0 (declaration is structural; dry-run success is separate, independent evidence)
     - condition: the agent lacks env, credentials, or authoritative contracts
       judgment: it will invent infrastructure and drift
       action: supply the execution package; when a component is Unknown, STOP and ask rather than guess
@@ -75,18 +74,21 @@ skill_intelligence_report:
   doctrine:
     - machine envelope beside human docs
     - verification block on every structural claim
-    - task contract before every mutation
-    - alert<->runbook 1:1; eval suite for non-deterministic features; machine rollback target
+    - task contract (narrowing scope) before every mutation
+    - alert<->runbook 1:1; eval suite for non-deterministic features; machine rollback target declared
+    - authority-affecting defaults require provenanced policy (fail closed)
+    - DPK is a compiler/design-time authority; runtime state, gates, and receipts belong to the Program Execution Controller
     - execution package supplies infra; agent never invents it
     - disclose debt honestly; smallest correct change
 
   invariants:
-    - ownership.operational_owner present else score 0
-    - machine rollback target exists else score 0
+    - ownership.operational_owner present (or provenanced policy default) else score 0
+    - machine rollback target declared else score 0
     - eval suite for every non-deterministic feature else score 0
     - every alert.runbook resolves else score 0
     - execution package has all seven components before work
     - no prohibited fields in logs; credentials referenced not embedded
+    - structural validation never claims executed runtime proof
 
   adapter_map:
     core_default: full six-layer DPK-1.0 pack + execution package for a production service
@@ -107,6 +109,7 @@ skill_intelligence_report:
     - machine_envelope (.ai/*) — future runs start from truth
     - execution_package — removes infra invention across all tasks
     - validate_devpack — quality gate + red-lines as a deterministic check
+    - program_execution_v2_projection — lossless design-time Blueprint authority with provenance edges
     - per_layer_templates — complete non-stub artifacts fast
     - verification_blocks_plus_debt_ledger — compounding trust across handoffs
 
@@ -131,6 +134,8 @@ skill_intelligence_report:
         score: 22
       - point: validate_devpack
         score: 21
+      - point: program_execution_v2_projection
+        score: 19
     exemplary_threshold: "at least one leverage point scores >=18/25"
     threshold_met: true
 

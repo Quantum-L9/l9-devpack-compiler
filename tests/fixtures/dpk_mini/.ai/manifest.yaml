@@ -1,0 +1,16 @@
+schema_version: "1.0"
+repository:
+  id: demo-service
+  name: Demo Service Pack
+  type: service
+  lifecycle: experimental
+  criticality: tier-3
+  description: A minimal deterministic DPK pack used to exercise the Program Execution v2 projection emitter.
+ownership:
+  accountable_team: platform-team
+  technical_owner: platform-team
+  operational_owner: platform-team
+deployment:
+  rollback:
+    strategy: inverse-patch
+    command: scripts/rollback.sh --dry-run

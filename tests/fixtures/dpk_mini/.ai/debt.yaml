@@ -1,0 +1,10 @@
+debt:
+  - id: TD-1
+    title: demo phase not yet hardened
+    origin: bootstrap project
+    affected_paths: [ src/ ]
+    consequences: [ "unverified hardening" ]
+    urgency_triggers: [ "pre-release review" ]
+    target_state: hardened demo phase
+    owner: platform-team
+    status: accepted

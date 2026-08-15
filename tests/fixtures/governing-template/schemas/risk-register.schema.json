@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "program-execution-blueprint.risk-register.v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "schema_version",
+    "risks"
+  ],
+  "properties": {
+    "schema": {
+      "const": "program-execution-blueprint.risk-register.v2"
+    },
+    "schema_version": {
+      "const": "2.0.0"
+    },
+    "risks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "risk",
+          "severity",
+          "likelihood",
+          "owner",
+          "trigger",
+          "preventive_controls",
+          "contingency",
+          "related_tasks",
+          "related_gates",
+          "acceptance_decision_id",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^RISK-[0-9]{3,}$"
+          },
+          "risk": {
+            "type": "string",
+            "minLength": 1
+          },
+          "severity": {
+            "enum": [
+              "critical",
+              "high",
+              "medium",
+              "low"
+            ]
+          },
+          "likelihood": {
+            "enum": [
+              "high",
+              "medium",
+              "low",
+              "UNKNOWN"
+            ]
+          },
+          "owner": {
+            "type": "string",
+            "minLength": 1
+          },
+          "trigger": {
+            "type": "string",
+            "minLength": 1
+          },
+          "preventive_controls": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "contingency": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "related_tasks": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "related_gates": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "acceptance_decision_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "enum": [
+              "open",
+              "mitigated",
+              "accepted",
+              "closed",
+              "superseded"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

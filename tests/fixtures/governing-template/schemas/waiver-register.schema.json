@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "program-execution-blueprint.waiver-register.v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "schema_version",
+    "waivers",
+    "policy"
+  ],
+  "properties": {
+    "schema": {
+      "const": "program-execution-blueprint.waiver-register.v2"
+    },
+    "schema_version": {
+      "const": "2.0.0"
+    },
+    "waivers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "scope",
+          "owner",
+          "reason",
+          "compensating_controls",
+          "evidence_ids",
+          "issued_at",
+          "expires_at",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^WAIVER-[0-9]{3,}$"
+          },
+          "scope": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "owner": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "compensating_controls": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "evidence_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "issued_at": {
+            "type": "string",
+            "minLength": 1
+          },
+          "expires_at": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "active",
+              "expired",
+              "revoked",
+              "superseded"
+            ]
+          }
+        }
+      }
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "implicit_waivers_forbidden",
+        "expired_waiver_non_passing"
+      ],
+      "properties": {
+        "implicit_waivers_forbidden": {
+          "const": true
+        },
+        "expired_waiver_non_passing": {
+          "const": true
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,16 @@
+program_version: "1.0.0"
+snapshot_at: "2026-08-15"
+open_decisions:
+  - id: OD-1
+    question: Which metric threshold gates the second phase?
+    options:
+      - threshold-0.9
+      - threshold-0.95
+    blocking: true
+    blocks_tasks:
+      - TASK-002
+  - id: OD-2
+    question: Documentation language for runbooks.
+    options:
+      - english
+    blocking: false

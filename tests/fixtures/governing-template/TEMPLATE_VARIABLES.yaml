@@ -1,0 +1,21 @@
+schema: program-execution-blueprint.template-variables.v2
+required:
+  PROGRAM_NAME: Human-readable program name
+  PROGRAM_ID: Lowercase hyphenated identifier
+  PROGRAM_VERSION: Semantic version
+  PROGRAM_OWNER: Named owner or governing body
+  DATE: ISO-8601 timestamp or date
+recommended_naming:
+  workstream: WS-01
+  wave: W0
+  task: TASK-001
+  gate: GATE-001
+  decision: DEC-001
+  unknown: UNK-001
+  risk: RISK-001
+  authority: AUTH-001
+  source: SRC-001
+  evidence: EVID-001
+  execution_target: TARGET-001
+  waiver: WAIVER-001
+  edge: EDGE-001

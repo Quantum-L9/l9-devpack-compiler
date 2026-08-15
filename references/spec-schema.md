@@ -21,7 +21,7 @@ The **optimal input** to the compiler is a spec of **facts**, not code. Instead 
 A **stub** is fake content pretending something is done (a placeholder file, a `// TODO` body, `...`). That is banned in a *built* artifact. A **spec** legitimately records what is *not* done — but as structured data, never as a stub:
 
 - unbuilt files → `file_plan[].status: build | extract | adapt | deferred` (path + purpose + contract, **no body**).
-- unresolved choices → `open_decisions[]` (`question`, `options`, `default`, `blocking`, `owner`). A `blocking: true` open decision keeps the pack out of `operable` until resolved.
+- unresolved choices → `open_decisions[]` (`question`, `options`, `default`, `blocking`, `owner`). A `blocking: true` open decision keeps the pack out of `compile_ready` until resolved.
 - behavior → `interfaces` + `invariants` + `commands` (the contract), **not pseudo-code**.
 
 So: recording "this isn't built yet" as `status`/`open_decisions` is honest and required; writing a placeholder file that *looks* built is the stub the build gate rejects.

@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "program-execution-blueprint.execution-targets.v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "schema_version",
+    "targets"
+  ],
+  "properties": {
+    "schema": {
+      "const": "program-execution-blueprint.execution-targets.v2"
+    },
+    "schema_version": {
+      "const": "2.0.0"
+    },
+    "targets": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "authority_owner",
+          "execution_mode",
+          "repository_id",
+          "source_of_truth",
+          "environments",
+          "mutability",
+          "expected_revision",
+          "adapter"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^TARGET-[0-9]{3,}$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "kind": {
+            "enum": [
+              "git_repository",
+              "service",
+              "database",
+              "process",
+              "artifact",
+              "program_control",
+              "external_system"
+            ]
+          },
+          "authority_owner": {
+            "type": "string",
+            "minLength": 1
+          },
+          "execution_mode": {
+            "enum": [
+              "repo_local",
+              "program_control",
+              "external_adapter",
+              "read_only"
+            ]
+          },
+          "repository_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source_of_truth": {
+            "type": "string",
+            "minLength": 1
+          },
+          "environments": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "mutability": {
+            "enum": [
+              "read_only",
+              "reversible",
+              "controlled",
+              "irreversible"
+            ]
+          },
+          "expected_revision": {
+            "type": "string",
+            "minLength": 1
+          },
+          "adapter": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}

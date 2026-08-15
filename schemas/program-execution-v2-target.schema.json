@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://quantum-l9.github.io/l9-devpack-compiler/program-execution-v2-target.schema.json",
+  "title": "Program Execution Blueprint v2 compile-target overlay",
+  "description": "Versioned target overlay for the DPK Program Execution v2 projection (DEC-006, DEC-007). It (1) defines the PE-specific input config `.ai/program-execution-v2.yaml`, and (2) pins the emitted-guarantee shapes: canonical ten-action ceilings, scoped unknowns, provenance-carrying authority facts, and the absence of runtime-state keys.",
+  "type": "object",
+  "properties": {
+    "target_contract": {
+      "type": "string",
+      "const": "program-execution-blueprint.v2"
+    },
+    "input_config": {
+      "type": "object",
+      "description": "The `.ai/program-execution-v2.yaml` overlay config consumed by the emitter.",
+      "required": ["program_version", "snapshot_at"],
+      "additionalProperties": false,
+      "properties": {
+        "program_version": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Emitted program version (supersession marker)."
+        },
+        "snapshot_at": {
+          "type": "string",
+          "minLength": 1,
+          "description": "ISO-8601 snapshot date of the emitted definition."
+        },
+        "open_decisions": {
+          "type": "array",
+          "description": "Open decisions: blocking entries become scoped UNKNOWN_REGISTER records; non-blocking entries become pending DECISION_REGISTER records.",
+          "items": {
+            "type": "object",
+            "required": ["id", "question"],
+            "additionalProperties": false,
+            "properties": {
+              "id": {"type": "string", "minLength": 1},
+              "question": {"type": "string", "minLength": 1},
+              "options": {"type": "array", "items": {"type": "string"}},
+              "blocking": {"type": "boolean"},
+              "blocks_tasks": {
+                "type": "array",
+                "description": "Task IDs that consume this missing fact. Unknowns block ONLY these named tasks (DEC-005).",
+                "items": {"type": "string", "minLength": 1}
+              }
+            }
+          }
+        }
+      }
+    },
+    "emitted_authorization_ceiling": {
+      "type": "object",
+      "description": "Every emitted Task Card carries exactly these ten keys; no action is granted by omission (AC-011).",
+      "required": [
+        "inspect",
+        "local_write",
+        "commit",
+        "push",
+        "pull_request",
+        "merge",
+        "publish_or_release",
+        "deploy_or_migrate",
+        "destructive_change",
+        "external_message"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "inspect": {"type": "boolean"},
+        "local_write": {"type": "boolean"},
+        "commit": {"const": false, "description": "The emitter never grants commit authority; widening is rejected."},
+        "push": {"const": false},
+        "pull_request": {"const": false},
+        "merge": {"const": false},
+        "publish_or_release": {"const": false},
+        "deploy_or_migrate": {"const": false},
+        "destructive_change": {"const": false},
+        "external_message": {"const": false}
+      }
+    },
+    "emitted_unknown": {
+      "type": "object",
+      "description": "Emitted UNKNOWN_REGISTER entry: a scoped blocker with an explicit consumer list (AC-012).",
+      "required": ["id", "topic", "blocks", "status"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "topic": {"type": "string", "minLength": 1},
+        "blocks": {"type": "array", "items": {"type": "string"}},
+        "status": {"const": "open"},
+        "owner": {"type": "string", "minLength": 1},
+        "safe_state": {"type": "string"},
+        "resolution_requirements": {"type": "array", "items": {"type": "string"}},
+        "resolution_evidence_ids": {"type": "array", "items": {"type": "string"}},
+        "resolved_at": {"type": ["string", "null"]}
+      }
+    },
+    "emitted_provenance": {
+      "type": "object",
+      "description": "Every authority-affecting emitted fact carries a provenance edge to source evidence (AC-013).",
+      "required": ["fact", "evidence_id"],
+      "additionalProperties": false,
+      "properties": {
+        "fact": {"type": "string", "minLength": 1},
+        "evidence_id": {"type": "string", "pattern": "^EVID-[A-Z0-9-]+$"}
+      }
+    },
+    "runtime_state_keys": {
+      "type": "array",
+      "description": "Keys that must NEVER appear in emitted definitions (DNB-001/DNB-005).",
+      "items": {
+        "type": "string",
+        "enum": [
+          "runtime_state",
+          "gate_result",
+          "gate_results",
+          "attempt_result",
+          "attempt_results",
+          "lease",
+          "leases",
+          "handoff_receipt",
+          "receipts"
+        ]
+      }
+    }
+  },
+  "required": [
+    "target_contract",
+    "input_config",
+    "emitted_authorization_ceiling",
+    "emitted_unknown",
+    "emitted_provenance",
+    "runtime_state_keys"
+  ],
+  "additionalProperties": false
+}

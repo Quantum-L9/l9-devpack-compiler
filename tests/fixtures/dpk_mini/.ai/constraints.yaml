@@ -1,0 +1,1 @@
+latency: { request_budget_ms: 250, reserve_ms: 50 }

@@ -1,0 +1,8 @@
+alerts:
+  - name: DemoAlert
+    severity: ticket
+    owner: platform-team
+    signal: demo_metric
+    condition: "> 0 for 15m"
+    runbook: docs/runbooks/demo.md
+    rollback_candidate: false
